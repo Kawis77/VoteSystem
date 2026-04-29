@@ -1,6 +1,7 @@
 package com.example.votesystem.service;
 
 import com.example.votesystem.dto.request.VoteRequest;
+import com.example.votesystem.dto.response.VoteByVoterResponse;
 import com.example.votesystem.dto.response.VoteResponse;
 import com.example.votesystem.entity.Candidate;
 import com.example.votesystem.entity.Election;
@@ -46,6 +47,17 @@ public class VoteService {
         Vote vote = voteRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Vote not found: " + id));
         return voteMapper.toResponse(vote);
+    }
+
+    @Transactional(readOnly = true)
+    public List<VoteByVoterResponse> findByVoterId(Long voterId) {
+        voterRepository.findById(voterId)
+                .orElseThrow(() -> new NotFoundException("Voter not found: " + voterId));
+
+        return voteRepository.findByVoterId(voterId)
+                .stream()
+                .map(voteMapper::toVoteByVoterResponse)
+                .toList();
     }
 
     @Transactional

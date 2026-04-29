@@ -1,6 +1,7 @@
 package com.example.votesystem.mapper;
 
 import com.example.votesystem.dto.request.VoteRequest;
+import com.example.votesystem.dto.response.VoteByVoterResponse;
 import com.example.votesystem.dto.response.VoteResponse;
 import com.example.votesystem.entity.Candidate;
 import com.example.votesystem.entity.Election;
@@ -30,6 +31,15 @@ public class VoteMapper {
                 vote.getVoterId(),
                 vote.getElection().getId(),
                 vote.getCandidate().getId()
+        );
+    }
+
+    public VoteByVoterResponse toVoteByVoterResponse(Vote vote) {
+        return new VoteByVoterResponse(
+                vote.getElection().getId(),
+                vote.getElection().getName(),
+                vote.getCandidate().getId(),
+                vote.getCandidate().getName()
         );
     }
 }
