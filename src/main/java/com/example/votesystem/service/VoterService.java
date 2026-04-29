@@ -3,6 +3,7 @@ package com.example.votesystem.service;
 import com.example.votesystem.dto.request.VoterRequest;
 import com.example.votesystem.dto.response.VoterResponse;
 import com.example.votesystem.entity.Voter;
+import com.example.votesystem.exception.NotFoundException;
 import com.example.votesystem.mapper.VoterMapper;
 import com.example.votesystem.repository.VoterRepository;
 import lombok.RequiredArgsConstructor;
@@ -72,6 +73,6 @@ public class VoterService {
     @Transactional(readOnly = true)
     public Voter findEntityById(Long id) {
         return voterRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Voter not found: " + id));
+                .orElseThrow(() -> new NotFoundException("Voter not found: " + id));
     }
 }
