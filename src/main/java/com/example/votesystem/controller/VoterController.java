@@ -1,7 +1,9 @@
 package com.example.votesystem.controller;
 
 import com.example.votesystem.dto.request.VoterRequest;
+import com.example.votesystem.dto.response.VoteByVoterResponse;
 import com.example.votesystem.dto.response.VoterResponse;
+import com.example.votesystem.service.VoteService;
 import com.example.votesystem.service.VoterService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import java.util.List;
 public class VoterController {
 
     private final VoterService voterService;
+    private final VoteService voteService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -31,6 +34,11 @@ public class VoterController {
     @GetMapping("/{id}")
     public VoterResponse findById(@PathVariable Long id) {
         return voterService.findById(id);
+    }
+
+    @GetMapping("/{id}/votes")
+    public List<VoteByVoterResponse> findVotesByVoterId(@PathVariable Long id) {
+        return voteService.findByVoterId(id);
     }
 
     @PutMapping("/{id}")
