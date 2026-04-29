@@ -17,7 +17,9 @@ public class VoterMapper {
 
     public void updateEntity(Voter voter, VoterRequest request) {
         voter.setName(request.name());
-        voter.setBlocked(Boolean.TRUE.equals(request.blocked()));
+        if (request.blocked() != null) {
+            voter.setBlocked(request.blocked());
+        }
     }
 
     public VoterResponse toResponse(Voter voter) {
