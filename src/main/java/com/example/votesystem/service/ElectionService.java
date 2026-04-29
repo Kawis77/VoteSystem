@@ -4,6 +4,8 @@ import com.example.votesystem.dto.request.ElectionRequest;
 import com.example.votesystem.dto.response.ElectionResponse;
 import com.example.votesystem.entity.Election;
 import com.example.votesystem.entity.ElectionStatus;
+import com.example.votesystem.exception.ElectionClosedException;
+import com.example.votesystem.exception.NotFoundException;
 import com.example.votesystem.mapper.ElectionMapper;
 import com.example.votesystem.repository.ElectionRepository;
 import lombok.RequiredArgsConstructor;
@@ -47,7 +49,8 @@ public class ElectionService {
     public ElectionResponse update(Long id, ElectionRequest request) {
         Election existing = findEntityById(id);
         if (existing.getStatus() == ElectionStatus.CLOSED) {
-            throw new IllegalStateException("Cannot update closed election: " + id);
+            throw new ElectionClosedException(
+                    "Cannot update election with id=" + id + " because its status is CLOSED");
         }
         electionMapper.updateEntity(existing, request);
         if (existing.getStatus() == null) {
@@ -65,6 +68,9 @@ public class ElectionService {
     @Transactional
     public ElectionResponse changeStatus(Long id, ElectionStatus status) {
         Election existing = findEntityById(id);
+        if (status == null) {
+            throw new IllegalArgumentException("Election status must be provided for election id=" + id);
+        }
         existing.setStatus(status);
         return electionMapper.toResponse(existing);
     }
@@ -72,6 +78,6 @@ public class ElectionService {
     @Transactional(readOnly = true)
     public Election findEntityById(Long id) {
         return electionRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Election not found: " + id));
+                .orElseThrow(() -> new NotFoundException("Election not found: " + id));
     }
 }

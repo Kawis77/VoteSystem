@@ -8,7 +8,6 @@ public record ElectionRequest(
         @NotBlank
         @Size(max = 255)
         String name,
-
         ElectionStatus status
 ) {
 }

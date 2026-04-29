@@ -7,6 +7,11 @@ import com.example.votesystem.entity.Election;
 import com.example.votesystem.entity.ElectionStatus;
 import com.example.votesystem.entity.Vote;
 import com.example.votesystem.entity.Voter;
+import com.example.votesystem.exception.CandidateMismatchException;
+import com.example.votesystem.exception.DuplicateVoteException;
+import com.example.votesystem.exception.ElectionClosedException;
+import com.example.votesystem.exception.NotFoundException;
+import com.example.votesystem.exception.VoterBlockedException;
 import com.example.votesystem.mapper.VoteMapper;
 import com.example.votesystem.repository.CandidateRepository;
 import com.example.votesystem.repository.ElectionRepository;
@@ -39,35 +44,38 @@ public class VoteService {
     @Transactional(readOnly = true)
     public VoteResponse findById(Long id) {
         Vote vote = voteRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Vote not found: " + id));
+                .orElseThrow(() -> new NotFoundException("Vote not found: " + id));
         return voteMapper.toResponse(vote);
     }
 
     @Transactional
     public VoteResponse castVote(VoteRequest request) {
         Voter voter = voterRepository.findById(request.voterId())
-                .orElseThrow(() -> new IllegalArgumentException("Voter not found: " + request.voterId()));
+                .orElseThrow(() -> new NotFoundException("Voter not found: " + request.voterId()));
         if (voter.isBlocked()) {
-            throw new IllegalStateException("Blocked voter cannot vote: " + request.voterId());
+            throw new VoterBlockedException("Voter with id=" + request.voterId() + " is blocked and cannot cast a vote");
         }
 
         Election election = electionRepository.findById(request.electionId())
-                .orElseThrow(() -> new IllegalArgumentException("Election not found: " + request.electionId()));
+                .orElseThrow(() -> new NotFoundException("Election not found: " + request.electionId()));
         if (election.getStatus() != ElectionStatus.OPEN) {
-            throw new IllegalStateException("Voting is allowed only for OPEN elections: " + request.electionId());
+            throw new ElectionClosedException(
+                    "Election with id=" + request.electionId() + " is " + election.getStatus() + " and is not open for voting");
         }
 
         Candidate candidate = candidateRepository.findById(request.candidateId())
-                .orElseThrow(() -> new IllegalArgumentException("Candidate not found: " + request.candidateId()));
+                .orElseThrow(() -> new NotFoundException("Candidate not found: " + request.candidateId()));
 
         if (!candidate.getElection().getId().equals(request.electionId())) {
-            throw new IllegalStateException("Candidate does not belong to election: " + request.electionId());
+            throw new CandidateMismatchException(
+                    "Candidate with id=" + request.candidateId() + " belongs to election id="
+                            + candidate.getElection().getId() + " but request used election id=" + request.electionId());
         }
 
         boolean alreadyVoted = voteRepository.existsByVoterIdAndElectionId(request.voterId(), request.electionId());
         if (alreadyVoted) {
-            throw new IllegalStateException(
-                    "Voter has already voted in this election: voterId=" + request.voterId() + ", electionId=" + request.electionId());
+            throw new DuplicateVoteException(
+                    "Voter with id=" + request.voterId() + " has already cast a vote in election id=" + request.electionId());
         }
 
         Vote vote = voteMapper.toEntity(request, election, candidate);

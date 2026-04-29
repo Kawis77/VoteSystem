@@ -5,6 +5,9 @@ import com.example.votesystem.dto.response.CandidateResponse;
 import com.example.votesystem.entity.Candidate;
 import com.example.votesystem.entity.Election;
 import com.example.votesystem.entity.ElectionStatus;
+import com.example.votesystem.exception.CandidateElectionChangeNotAllowedException;
+import com.example.votesystem.exception.ElectionClosedException;
+import com.example.votesystem.exception.NotFoundException;
 import com.example.votesystem.mapper.CandidateMapper;
 import com.example.votesystem.repository.CandidateRepository;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +42,8 @@ public class CandidateService {
     public CandidateResponse create(CandidateRequest request) {
         Election election = electionService.findEntityById(request.electionId());
         if (election.getStatus() == ElectionStatus.CLOSED) {
-            throw new IllegalStateException("Cannot create candidate for closed election: " + request.electionId());
+            throw new ElectionClosedException(
+                    "Cannot create candidate for election id=" + request.electionId() + " because election is CLOSED");
         }
 
         Candidate candidate = candidateMapper.toEntity(request);
@@ -52,12 +56,15 @@ public class CandidateService {
     public CandidateResponse update(Long id, CandidateRequest request) {
         Candidate existing = findEntityById(id);
         if (existing.getElection().getStatus() == ElectionStatus.CLOSED) {
-            throw new IllegalStateException("Cannot update candidate for closed election: " + existing.getElection().getId());
+            throw new ElectionClosedException(
+                    "Cannot update candidate id=" + id + " because election id=" + existing.getElection().getId() + " is CLOSED");
         }
 
         electionService.findEntityById(request.electionId());
         if (!existing.getElection().getId().equals(request.electionId())) {
-            throw new IllegalStateException("Candidate election cannot be changed after creation");
+            throw new CandidateElectionChangeNotAllowedException(
+                    "Cannot move candidate id=" + id + " from election id=" + existing.getElection().getId()
+                            + " to election id=" + request.electionId() + " after creation");
         }
 
         candidateMapper.updateEntity(existing, request);
@@ -68,7 +75,8 @@ public class CandidateService {
     public void delete(Long id) {
         Candidate existing = findEntityById(id);
         if (existing.getElection().getStatus() == ElectionStatus.CLOSED) {
-            throw new IllegalStateException("Cannot delete candidate for closed election: " + existing.getElection().getId());
+            throw new ElectionClosedException(
+                    "Cannot delete candidate id=" + id + " because election id=" + existing.getElection().getId() + " is CLOSED");
         }
         candidateRepository.delete(existing);
     }
@@ -85,6 +93,6 @@ public class CandidateService {
     @Transactional(readOnly = true)
     public Candidate findEntityById(Long id) {
         return candidateRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Candidate not found: " + id));
+                .orElseThrow(() -> new NotFoundException("Candidate not found: " + id));
     }
 }
